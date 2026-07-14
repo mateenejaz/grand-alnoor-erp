@@ -1,16 +1,11 @@
-// Import the necessary function from the Supabase package to initialize a connection
-import { createClient } from '@supabase/supabase-js';
+// Import createBrowserClient from the SSR package so it manages cookies automatically
+import { createBrowserClient } from '@supabase/ssr';
 
-// Read the public Supabase URL string that you saved inside your hidden .env.local file
+// Read your hidden Supabase project URL credentials
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
-// Read the public anonymous API key string that you saved inside your hidden .env.local file
+// Read your hidden Supabase public anonymous security key
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Check to make sure both variables are actually found before trying to connect
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase environment variables are missing! Check your .env.local file.');
-}
-
-// Build and export a working connection instance that your application can use to talk to your database
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Build and export a browser client that securely syncs login cookies with your Next.js middleware
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
