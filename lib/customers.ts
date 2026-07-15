@@ -1,10 +1,23 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseBrowser as supabase } from './supabase-client';
 
-// We use the pure client so it works flawlessly inside browser components
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// 1. Used by the Customers Directory page for the main table
+export async function getCustomers(businessId: string, searchQuery?: string) {
+  let query = supabase
+    .from('customers')
+    .select('*, bookings(id, event_date, status)')
+    .eq('business_id', businessId)
+    .order('created_at', { ascending: false });
 
+  if (searchQuery) {
+    query = query.or(`full_name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+// 2. Used by the New Booking Modal for the fast dropdown search
 export async function searchCustomers(businessId: string, query: string) {
   if (!query) return [];
   
@@ -19,6 +32,31 @@ export async function searchCustomers(businessId: string, query: string) {
   return data || [];
 }
 
+// 3. Gets a single customer's full profile
+export async function getCustomerById(id: string) {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) throw error;
+  return data;
+}
+
+// 4. Gets the history of bookings for a single customer
+export async function getCustomerBookings(customerId: string) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*, venues(name)')
+    .eq('customer_id', customerId)
+    .order('event_date', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
+}
+
+// 5. Creates a new customer
 export async function createCustomer(customerData: any) {
   const { data, error } = await supabase
     .from('customers')
@@ -30,11 +68,13 @@ export async function createCustomer(customerData: any) {
   return data;
 }
 
-export async function getCustomerById(id: string) {
+// 6. Updates an existing customer
+export async function updateCustomer(id: string, customerData: any) {
   const { data, error } = await supabase
     .from('customers')
-    .select('*')
+    .update(customerData)
     .eq('id', id)
+    .select()
     .single();
     
   if (error) throw error;

@@ -1,8 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabaseBrowser as supabase } from './supabase-client';
 
 export async function checkBookingConflict(venueId: string, eventDate: string, timeSlot: string) {
   // Logic: Full Day overlaps with everything. 
@@ -11,8 +7,6 @@ export async function checkBookingConflict(venueId: string, eventDate: string, t
     ? ['Day', 'Evening', 'Full Day'] 
     : [timeSlot, 'Full Day'];
 
-  // Notice we STRICTLY filter by the exact venue_id. 
-  // JTS Hall and RSM Hall on the same date will NEVER conflict here.
   const { data, error } = await supabase
     .from('bookings')
     .select('id')
@@ -23,7 +17,6 @@ export async function checkBookingConflict(venueId: string, eventDate: string, t
 
   if (error) throw error;
   
-  // If we found any rows, there is a hard conflict
   return data && data.length > 0;
 }
 

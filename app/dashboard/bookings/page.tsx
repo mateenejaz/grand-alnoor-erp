@@ -23,9 +23,10 @@ export default async function BookingsPage() {
     if (profile?.business_id) {
       businessId = profile.business_id;
 
+      // Notice we now fetch customers attached to the booking!
       const { data: bookingsData } = await supabase
         .from('bookings')
-        .select('*')
+        .select('*, customers(id, full_name, phone)')
         .eq('business_id', businessId);
 
       const { data: venuesData } = await supabase
@@ -67,7 +68,6 @@ export default async function BookingsPage() {
         </div>
       </div>
 
-      {/* We now pass venuesList directly into the Calendar component */}
       <BookingCalendar 
         initialBookings={finalizedBookings} 
         businessId={businessId} 

@@ -1,71 +1,87 @@
-import { CalendarDays, Star, Coins, AlertCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase-server';
+import { redirect } from 'next/navigation';
+import { getDashboardStats, getUpcomingEvents, getMonthlyRevenueLast6Months } from '@/lib/dashboard';
+import StatCard from '@/components/dashboard/StatCard';
+import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
+import RevenueChart from '@/components/dashboard/RevenueChart';
+import { CalendarCheck, CalendarDays, Wallet, AlertCircle } from 'lucide-react';
 
-export default function DashboardPage() {
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardHomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // Get Business ID
+  const { data: profile } = await supabase
+    .from('users')
+    .select('business_id, full_name')
+    .eq('auth_id', user.id)
+    .single();
+
+  const businessId = profile?.business_id;
+  if (!businessId) {
+    return <div className="p-10 text-center">Business Profile not found. Please contact support.</div>;
+  }
+
+  // Fetch all dashboard data concurrently for maximum speed
+  const [stats, upcomingEvents, revenueData] = await Promise.all([
+    getDashboardStats(businessId),
+    getUpcomingEvents(businessId, 10),
+    getMonthlyRevenueLast6Months(businessId)
+  ]);
+
   return (
-    <div className="space-y-8">
-      {/* Brand Greetings Grid Section */}
-      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1F3864] font-serif">
-            Welcome to Grand Alnoor ERP
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Marquee operations panel overview. Select sections from the sidebar to begin processing bookings.
-          </p>
-        </div>
-        <div className="px-4 py-2 bg-[#B8860B]/10 rounded-xl border border-[#B8860B]/30 text-[#B8860B] text-xs font-semibold uppercase tracking-wider">
-          Live Connection
-        </div>
-      </div>
-
-      {/* 4 Core Premium Analytical KPI Stats Counters */}
+    <div className="space-y-6">
+      
+      {/* Top Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* Card 1: Monthly Bookings Counter */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#1F3864]/30 transition-all duration-200">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Bookings This Month</p>
-            <p className="text-2xl font-bold text-[#1F3864]">24</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#1F3864]/5 flex items-center justify-center text-[#1F3864]">
-            <CalendarDays className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 2: Upcoming Marquee Events Count */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#1F3864]/30 transition-all duration-200">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Upcoming Events</p>
-            <p className="text-2xl font-bold text-[#1F3864]">18</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#B8860B]/10 flex items-center justify-center text-[#B8860B]">
-            <Star className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 3: Revenue Metrics Tracker (PKR) */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#1F3864]/30 transition-all duration-200">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Revenue This Month</p>
-            <p className="text-2xl font-bold text-[#1F3864] font-sans">PKR 3.4M</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <Coins className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Card 4: Outstanding Receivables / Pending Payments */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#1F3864]/30 transition-all duration-200">
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Pending Payments</p>
-            <p className="text-2xl font-bold text-red-600">08</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
-
+        <StatCard 
+          title="Revenue This Month" 
+          value={stats.revenueThisMonth} 
+          isCurrency={true}
+          icon={<Wallet className="w-6 h-6" />} 
+          subtitle="Total payments collected"
+        />
+        <StatCard 
+          title="Total Outstanding" 
+          value={stats.totalOutstanding} 
+          isCurrency={true}
+          icon={<AlertCircle className="w-6 h-6" />} 
+          subtitle="Across all active contracts"
+        />
+        <StatCard 
+          title="Events This Month" 
+          value={stats.confirmedBookingsThisMonth} 
+          icon={<CalendarCheck className="w-6 h-6" />} 
+          subtitle="Confirmed bookings"
+        />
+        <StatCard 
+          title="Events Next Month" 
+          value={stats.confirmedBookingsNextMonth} 
+          icon={<CalendarDays className="w-6 h-6" />} 
+          subtitle="Upcoming confirmed bookings"
+        />
       </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+        {/* Left Side: Schedule (Takes up 2 columns on wide screens) */}
+        <div className="lg:col-span-2 h-full">
+          <UpcomingEvents events={upcomingEvents} />
+        </div>
+        
+        {/* Right Side: Analytics Chart (Takes up 1 column) */}
+        <div className="lg:col-span-1 h-full">
+          <RevenueChart data={revenueData} />
+        </div>
+      </div>
+
     </div>
   );
 }

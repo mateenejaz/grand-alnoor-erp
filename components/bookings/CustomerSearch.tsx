@@ -7,20 +7,27 @@ import { searchCustomers } from '@/lib/customers';
 interface CustomerSearchProps {
   businessId: string;
   onCustomerReady: (customerData: any) => void;
+  initialCustomer?: any; // Added for Edit Mode
 }
 
-export default function CustomerSearch({ businessId, onCustomerReady }: CustomerSearchProps) {
+export default function CustomerSearch({ businessId, onCustomerReady, initialCustomer }: CustomerSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   
-  // Selection states
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  // Notice we auto-fill the selected customer if we are editing an existing booking
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(initialCustomer || null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ full_name: '', phone: '', cnic: '', address: '' });
 
-  // Debounced search
+  // On mount, auto-trigger the ready state if we were passed an initial customer
+  useEffect(() => {
+    if (initialCustomer && !isCreatingNew) {
+      onCustomerReady({ id: initialCustomer.id });
+    }
+  }, [initialCustomer, onCustomerReady, isCreatingNew]);
+
   useEffect(() => {
     if (query.length > 1 && !selectedCustomer && !isCreatingNew) {
       setIsSearching(true);
@@ -76,12 +83,7 @@ export default function CustomerSearch({ businessId, onCustomerReady }: Customer
               {results.length > 0 ? (
                 <div className="p-1">
                   {results.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => handleSelectExisting(c)}
-                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors flex flex-col"
-                    >
+                    <button key={c.id} type="button" onClick={() => handleSelectExisting(c)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 rounded-lg transition-colors flex flex-col">
                       <span className="font-semibold text-gray-900">{c.full_name}</span>
                       <span className="text-xs text-gray-500">{c.phone}</span>
                     </button>
@@ -92,11 +94,7 @@ export default function CustomerSearch({ businessId, onCustomerReady }: Customer
               )}
               
               <div className="border-t border-gray-100 p-2 bg-gray-50">
-                <button
-                  type="button"
-                  onClick={() => { setShowDropdown(false); setIsCreatingNew(true); }}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-[#1F3864] text-white text-sm font-medium rounded-lg hover:bg-[#152644] transition-colors"
-                >
+                <button type="button" onClick={() => { setShowDropdown(false); setIsCreatingNew(true); }} className="w-full flex items-center justify-center gap-2 py-2 bg-[#1F3864] text-white text-sm font-medium rounded-lg hover:bg-[#152644] transition-colors">
                   <Plus className="w-4 h-4" /> Add New Customer
                 </button>
               </div>
@@ -112,11 +110,7 @@ export default function CustomerSearch({ businessId, onCustomerReady }: Customer
               <p className="text-xs text-green-700">{selectedCustomer.phone} {selectedCustomer.isNew && '(New Profile)'}</p>
             </div>
           </div>
-          <button 
-            type="button" 
-            onClick={() => { setSelectedCustomer(null); setQuery(''); onCustomerReady(null); }}
-            className="text-xs font-semibold text-green-700 hover:text-green-900 underline"
-          >
+          <button type="button" onClick={() => { setSelectedCustomer(null); setQuery(''); onCustomerReady(null); }} className="text-xs font-semibold text-green-700 hover:text-green-900 underline">
             Change
           </button>
         </div>
@@ -132,12 +126,7 @@ export default function CustomerSearch({ businessId, onCustomerReady }: Customer
             <input type="text" placeholder="CNIC (Optional)" className="px-3 py-2 border border-gray-200 rounded-lg text-sm" value={newCustomer.cnic} onChange={e => setNewCustomer({...newCustomer, cnic: e.target.value})} />
             <input type="text" placeholder="Address (Optional)" className="px-3 py-2 border border-gray-200 rounded-lg text-sm" value={newCustomer.address} onChange={e => setNewCustomer({...newCustomer, address: e.target.value})} />
           </div>
-          <button 
-            type="button" 
-            onClick={handleConfirmNewCustomer}
-            disabled={!newCustomer.full_name || !newCustomer.phone}
-            className="w-full py-2 bg-gray-900 text-white text-sm font-medium rounded-lg disabled:opacity-50"
-          >
+          <button type="button" onClick={handleConfirmNewCustomer} disabled={!newCustomer.full_name || !newCustomer.phone} className="w-full py-2 bg-gray-900 text-white text-sm font-medium rounded-lg disabled:opacity-50">
             Attach to Booking
           </button>
         </div>
