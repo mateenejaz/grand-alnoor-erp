@@ -17,7 +17,9 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          );
           response = NextResponse.next({
             request,
           });
@@ -29,26 +31,23 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Retrieve the current user from the cookie session safely
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
-  const isLoginRoute = request.nextUrl.pathname === '/login';
-
-  // Rule 1: If trying to view dashboard pages without being logged in, send them straight to login
-  if (isDashboardRoute && !user) {
+  // If not logged in and trying to access dashboard, redirect to login
+  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Rule 2: If a logged-in user manual types /login, steer them away right into the dashboard
-  if (isLoginRoute && user) {
+  // If logged in and at login page, redirect to dashboard
+  if (user && request.nextUrl.pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return response;
 }
 
-// Config file filter to specify exactly which folder routes run this authentication check
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
