@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Loader2, Lock } from 'lucide-react';
@@ -12,15 +12,29 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Fallback strings prevent the 500 Server Error crash if variables are missing
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
+
+  const supabase = createBrowserClient(supabaseUrl, supabaseKey);
+
+  useEffect(() => {
+    // If the fallbacks are being used, display a clean warning on the UI
+    if (supabaseUrl === 'https://placeholder.supabase.co') {
+      setError('System Error: Database connection keys are missing from the Vercel environment.');
+    }
+  }, [supabaseUrl]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (supabaseUrl === 'https://placeholder.supabase.co') {
+      setError('Cannot log in: Database connection is not configured.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -32,7 +46,6 @@ export default function LoginPage() {
         throw signInError;
       }
 
-      // Success! Send them to the dashboard and refresh to update server state
       router.push('/dashboard');
       router.refresh();
       
