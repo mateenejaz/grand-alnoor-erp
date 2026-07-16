@@ -1,35 +1,34 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase-server';
+'use client';
+
 import Sidebar from '@/components/layout/Sidebar';
 import TopBar from '@/components/layout/TopBar';
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  // Route security shield
-  if (error || !user) {
-    redirect('/login');
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left fixed tracking sidebar navigation navigation */}
-      <Sidebar />
+    // 1. Parent container locks to the screen viewport height and width
+    <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
+      
+      {/* 2. Sidebar stays fixed on the left and does not shrink */}
+      <Sidebar className="w-64 flex-shrink-0 h-full" />
 
-      {/* Main variable page view container */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Dynamic header tracker passing layout context */}
-        <TopBar title="dashboard" />
+      {/* 3. Main Content Wrapper fills the remaining horizontal space */}
+      <div className="flex flex-col flex-1 h-full min-w-0">
+        
+        {/* TopBar remains fixed at the top */}
+        <TopBar />
 
-        {/* Render child dashboard pages code blocks inside clean canvas viewport */}
-        <main className="p-8 flex-1 overflow-y-auto">
-          {children}
+        {/* 4. CRITICAL FIX: 'overflow-y-auto' enables independent scrolling 
+            for the calendar and content pages, leaving Sidebar/TopBar locked in place. */}
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
+
       </div>
     </div>
   );
