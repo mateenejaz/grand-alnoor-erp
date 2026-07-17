@@ -38,7 +38,8 @@ export default function BookingCalendar({ initialBookings, businessId, venues }:
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-12rem)] relative">
+    // FIXED: Changed fixed height limits and 'overflow-hidden' to allow natural layout expansion
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-auto w-full relative mb-8">
       
       {/* Header Controls */}
       <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -70,14 +71,15 @@ export default function BookingCalendar({ initialBookings, businessId, venues }:
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="py-3 border-r border-gray-50 last:border-r-0">{d}</div>)}
       </div>
 
-      <div className="flex-1 grid grid-cols-7 grid-rows-6 bg-gray-50 divide-x divide-y divide-gray-100">
+      <div className="flex-1 grid grid-cols-7 bg-gray-100 divide-x divide-y divide-gray-100 border-b border-gray-100">
         {days.map((day, idx) => {
           const stringifiedDateKey = format(day, 'yyyy-MM-dd');
           const dayBookings = (initialBookings || []).filter(b => b.event_date?.split('T')[0].split(' ')[0] === stringifiedDateKey);
           const isCurrentMonth = format(day, 'MM') === format(currentDate, 'MM');
 
           return (
-            <div key={day.toString() + idx} onClick={() => handleDayClick(day)} className={`bg-white p-2 min-h-24 flex flex-col relative group transition-colors hover:bg-gray-50/80 cursor-pointer ${!isCurrentMonth ? 'opacity-40 bg-gray-50/30' : ''}`}>
+            // FIXED: Set uniform min-height to ensure even spacing for grid cells across 5-6 rows
+            <div key={day.toString() + idx} onClick={() => handleDayClick(day)} className={`bg-white p-3 min-h-[120px] flex flex-col relative group transition-colors hover:bg-gray-50/80 cursor-pointer ${!isCurrentMonth ? 'opacity-40 bg-gray-50/30' : ''}`}>
               <span className={`text-xs font-bold mb-1 block w-6 h-6 flex items-center justify-center rounded-full ${isSameDay(day, new Date()) ? 'bg-[#1F3864] text-white' : 'text-gray-700'}`}>
                 {format(day, 'd')}
               </span>
