@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Phone, User, Calendar, ArrowRight } from 'lucide-react';
+import { Search, Plus, Phone, User, Calendar, ArrowRight, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCustomers } from '@/lib/customers';
 import CustomerForm from './CustomerForm';
 import { format } from 'date-fns';
+import { supabaseBrowser } from '@/lib/supabase-client';
 
 interface CustomerListProps {
   initialCustomers: any[];
@@ -18,6 +19,10 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [isSearching, setIsSearching] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Track profile deletion selection targets
+  const [customerToDelete, setCustomerToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Live search debouncer
   useEffect(() => {
@@ -43,6 +48,29 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
   const handleSuccess = () => {
     setShowAddModal(false);
     router.refresh();
+  };
+
+  const handleDeleteCustomer = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Stops row from opening detail file links
+    if (!customerToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabaseBrowser
+        .from('customers')
+        .delete()
+        .eq('id', customerToDelete.id);
+
+      if (error) throw error;
+
+      setCustomerToDelete(null);
+      router.refresh(); // Syncs the view index context state
+    } catch (err) {
+      console.error("Deletion failure error:", err);
+      alert("Could not remove this customer file. They are likely tied to an existing booking, quote, or contract.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -83,7 +111,7 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
               <th className="p-4 font-bold hidden lg:table-cell">Source</th>
               <th className="p-4 font-bold text-center">Total Events</th>
               <th className="p-4 font-bold hidden sm:table-cell">Last Booking</th>
-              <th className="p-4 font-bold text-right">Action</th>
+              <th className="p-4 font-bold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -121,8 +149,18 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
                   <td className="p-4 text-sm text-gray-500 hidden sm:table-cell flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 inline text-gray-400 mr-1" /> {lastDate}
                   </td>
-                  <td className="p-4 text-right">
-                    <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#1F3864] inline transition-colors" />
+                  <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setCustomerToDelete(c); }}
+                        className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Delete Client Profile"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#1F3864] transition-colors" />
+                    </div>
                   </td>
                 </tr>
               );
@@ -140,12 +178,51 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
         </table>
       </div>
 
+      {/* CONFIRM DELETE MODAL BACKDROP POPUP */}
+      {customerToDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 animate-in zoom-in-95 duration-150 text-gray-900">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-serif font-bold text-red-700 flex items-center gap-2">
+                <Trash2 className="w-5 h-5" /> Erase Client Profile?
+              </h3>
+              <button onClick={() => setCustomerToDelete(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to completely erase the client profile for <strong className="text-gray-900">{customerToDelete.full_name}</strong>? This action cannot be reversed.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setCustomerToDelete(null)}
+                className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteCustomer}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Profile'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
            <CustomerForm 
-             businessId={businessId} 
-             onClose={() => setShowAddModal(false)} 
-             onSuccess={handleSuccess} 
+              businessId={businessId} 
+              onClose={() => setShowAddModal(false)} 
+              onSuccess={handleSuccess} 
            />
         </div>
       )}
