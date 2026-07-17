@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import QuotationBuilder from '@/components/quotations/QuotationBuilder';
 import QuotationPrintView from '@/components/quotations/QuotationPrintView';
 import ConvertContractButton from '@/components/quotations/ConvertContractButton';
+import DeleteQuotationButton from '@/components/quotations/DeleteQuotationButton';
 import { getPackages } from '@/lib/menu';
 import { getQuotationById } from '@/lib/quotations';
 import { FileText } from 'lucide-react';
@@ -56,8 +57,14 @@ export default async function QuotationDetailPage({ params }: Props) {
           </div>
         </div>
         
-        {/* NEW: Convert to Contract Action Button */}
-        {canConvert && <ConvertContractButton quotationId={quotation.id} />}
+        {/* Action Button Row */}
+        <div className="flex items-center gap-3">
+          {/* NEW: Permanent secure deletion component toggle button */}
+          <DeleteQuotationButton quotationId={quotation.id} />
+
+          {/* Convert to Contract Action Button */}
+          {canConvert && <ConvertContractButton quotationId={quotation.id} />}
+        </div>
       </div>
 
       {isEditable && (
