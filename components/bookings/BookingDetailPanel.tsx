@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Calendar, Clock, MapPin, Tag, Users, FileText, CheckCircle, Edit, ExternalLink, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Tag, Users, FileText, CheckCircle, Edit, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ interface BookingDetailPanelProps {
 export default function BookingDetailPanel({ booking, onClose, onEdit }: BookingDetailPanelProps) {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
@@ -33,6 +34,26 @@ export default function BookingDetailPanel({ booking, onClose, onEdit }: Booking
       console.error("Status update error:", error);
       alert("Failed to update status. Please try again.");
       setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteBooking = async () => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabaseBrowser
+        .from('bookings')
+        .delete()
+        .eq('id', booking.id);
+
+      if (error) throw error;
+
+      router.refresh(); // Tells the system to pull down fresh records from the database
+      onClose(); // Instantly shuts down the detail viewing panel window
+    } catch (error) {
+      console.error("Deletion failure error:", error);
+      alert("Could not remove this booking record. It might be linked to active contracts or quotes.");
+      setIsUpdating(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -57,6 +78,36 @@ export default function BookingDetailPanel({ booking, onClose, onEdit }: Booking
         {/* Scrollable Body */}
         <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50 space-y-6">
           
+          {/* Safety Deletion Warning Overlay Box */}
+          {showDeleteConfirm && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-900 flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 duration-200">
+              <div>
+                <h3 className="font-bold text-base flex items-center gap-2 text-red-700">
+                  <Trash2 className="w-5 h-5" /> Permanently Delete This Record?
+                </h3>
+                <p className="text-sm mt-1">
+                  This action is permanent and cannot be undone. It will remove this calendar slot entry from your platform entirely.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleDeleteBooking}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
+                >
+                  Yes, Delete Forever
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Customer & Actions Panel */}
           <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
             <div>
@@ -134,13 +185,24 @@ export default function BookingDetailPanel({ booking, onClose, onEdit }: Booking
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-          <button 
-            onClick={() => { onClose(); onEdit(booking); }} 
-            className="px-5 py-2.5 text-sm font-bold text-[#1F3864] border-2 border-[#1F3864]/20 rounded-xl hover:bg-[#1F3864]/5 transition-colors flex items-center gap-2"
-          >
-            <Edit className="w-4 h-4" /> Edit Booking
-          </button>
+        <div className="p-4 border-t border-gray-100 bg-white flex justify-between items-center shrink-0 flex-wrap gap-3">
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { onClose(); onEdit(booking); }} 
+              className="px-4 py-2.5 text-sm font-bold text-[#1F3864] border border-[#1F3864]/20 rounded-xl hover:bg-[#1F3864]/5 transition-colors flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" /> Edit
+            </button>
+
+            {/* NEW PERMANENT DELETE BUTTON */}
+            <button 
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)} 
+              className="px-4 py-2.5 text-sm font-bold text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>
           
           <div className="flex gap-3">
             {isUpdating ? (
@@ -160,6 +222,11 @@ export default function BookingDetailPanel({ booking, onClose, onEdit }: Booking
                     <button onClick={() => handleStatusChange('Cancelled')} className="px-6 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">Cancel Booking</button>
                     <button onClick={() => handleStatusChange('Completed')} className="px-6 py-2.5 text-sm font-bold text-white bg-[#1F3864] hover:bg-[#152644] rounded-xl transition-colors shadow-md">Mark Completed</button>
                   </>
+                )}
+                {booking.status === 'Cancelled' && (
+                  <span className="text-xs font-bold text-red-500 bg-red-50 border border-red-100 px-3 py-2 rounded-xl flex items-center self-center">
+                    This reservation has been cancelled.
+                  </span>
                 )}
               </>
             )}
