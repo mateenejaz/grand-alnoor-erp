@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileSignature, Calendar, Building, User, CreditCard, AlertTriangle, CheckCircle, Ban } from 'lucide-react';
+import { FileSignature, Calendar, Building, User, CreditCard, AlertTriangle, CheckCircle, Ban, Trash2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,7 @@ import { updateContractStatus } from '@/lib/contracts';
 import { getContractBalance, getPaymentsByContract } from '@/lib/payments';
 import RecordPaymentModal from '../payments/RecordPaymentModal';
 import PaymentHistory from '../payments/PaymentHistory';
+import { supabaseBrowser } from '@/lib/supabase-client';
 
 interface ContractDetailProps {
   contract: any;
@@ -19,6 +20,10 @@ export default function ContractDetail({ contract }: ContractDetailProps) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [balanceData, setBalanceData] = useState({ remainingBalance: 0, totalPaid: 0, totalAmount: 0 });
   const [payments, setPayments] = useState<any[]>([]);
+  
+  // Track contract deletion window state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch the mathematically exact balances from the server dynamically
   useEffect(() => {
@@ -51,6 +56,27 @@ export default function ContractDetail({ contract }: ContractDetailProps) {
     }
   };
 
+  const handleDeleteContract = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabaseBrowser
+        .from('contracts')
+        .delete()
+        .eq('id', contract.id);
+
+      if (error) throw error;
+
+      // Send the user out of this screen back to the main contract dashboard overview sheet
+      router.push('/dashboard/contracts');
+      router.refresh();
+    } catch (err) {
+      console.error("Deletion failure error:", err);
+      alert("Could not remove this contract file. Please verify if it still contains payment receipt history data records linked to it. Delete payments first.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -69,13 +95,65 @@ export default function ContractDetail({ contract }: ContractDetailProps) {
           <span className={`px-4 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wider ${contract.status === 'Active' ? 'bg-green-100 text-green-700' : contract.status === 'Completed' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
             {contract.status}
           </span>
-          {contract.status === 'Active' && (
-             <button onClick={() => handleStatusChange('Cancelled')} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel Contract">
-               <Ban className="w-5 h-5" />
-             </button>
-          )}
+          
+          <div className="flex items-center gap-1.5 border-l border-gray-100 pl-3">
+            {/* NEW PERMANENT DELETE BUTTON ICON */}
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Permanently Delete Contract"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+
+            {contract.status === 'Active' && (
+              <button onClick={() => handleStatusChange('Cancelled')} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancel Contract">
+                <Ban className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* CONFIRM DELETE MODAL BACKDROP POPUP */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 animate-in zoom-in-95 duration-150 text-gray-900">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-serif font-bold text-red-700 flex items-center gap-2">
+                <Trash2 className="w-5 h-5" /> Delete Contract Entry?
+              </h3>
+              <button onClick={() => setShowDeleteConfirm(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to permanently erase <strong className="text-gray-900">Contract #{contract.id.split('-')[0].toUpperCase()}</strong> from the system logs? This will destroy the document profile sheet record entirely.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteContract}
+                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Contract'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
