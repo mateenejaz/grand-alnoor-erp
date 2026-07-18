@@ -29,7 +29,7 @@ export default function DeletePackageButton({ packageId, packageName }: DeletePa
       router.refresh();
     } catch (err) {
       console.error("Package deletion error:", err);
-      alert("Could not remove this package tier. If a customer's active quotation or signed contract is built using this specific package, the database will block its removal.");
+      alert("Could not remove this package tier. If this package is currently referenced by live bookings, active contracts, or saved quotations, you must update or remove those records first.");
     } finally {
       setIsDeleting(false);
     }
@@ -40,9 +40,10 @@ export default function DeletePackageButton({ packageId, packageName }: DeletePa
       <button
         type="button"
         onClick={() => setShowConfirm(true)}
-        className="px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors flex items-center gap-1.5 print:hidden"
+        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors print:hidden"
+        title={`Delete ${packageName}`}
       >
-        <Trash2 className="w-3.5 h-3.5" /> Delete Package
+        <Trash2 className="w-4 h-4" />
       </button>
 
       {/* Warning Popup Overlay Modal */}
@@ -51,7 +52,7 @@ export default function DeletePackageButton({ packageId, packageName }: DeletePa
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 text-gray-900 animate-in zoom-in-95 duration-150">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-serif font-bold text-red-700 flex items-center gap-2">
-                <Trash2 className="w-5 h-5" /> Remove Menu Package?
+                <Trash2 className="w-5 h-5" /> Delete Package Entry?
               </h3>
               <button 
                 type="button" 
@@ -63,7 +64,7 @@ export default function DeletePackageButton({ packageId, packageName }: DeletePa
             </div>
             
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-              Are you sure you want to permanently delete the <strong className="text-gray-900">{packageName}</strong> setup? This action will remove the entire package tier option from your calculation templates.
+              Are you sure you want to permanently delete <strong className="text-gray-900">{packageName}</strong>? This package configuration will be removed from your master menu selections.
             </p>
 
             <div className="flex gap-3 justify-end">
