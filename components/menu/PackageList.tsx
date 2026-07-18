@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, Edit, EyeOff, Eye, PackageOpen } from 'lucide-react';
 import PackageForm from './PackageForm';
+import DeletePackageButton from './DeletePackageButton'; // Imported new delete component
 import { updatePackage } from '@/lib/menu';
 import { useRouter } from 'next/navigation';
 
@@ -48,13 +49,19 @@ export default function PackageList({ businessId, packages, allItems }: PackageL
                   <h4 className={`text-lg font-black font-serif ${pkg.is_active ? 'text-gray-900' : 'text-gray-500 line-through'}`}>{pkg.name}</h4>
                   <p className="text-sm font-bold text-[#B8860B] mt-0.5">PKR {pkg.price_per_head.toLocaleString()} <span className="text-xs text-gray-500 font-normal">/ head</span></p>
                 </div>
-                <div className="flex gap-1.5 bg-white rounded-lg shadow-sm border border-gray-100 p-1">
+                <div className="flex gap-1.5 bg-white rounded-lg shadow-sm border border-gray-100 p-1 items-center">
+                  {/* Status Toggle Eye Button */}
                   <button onClick={() => toggleStatus(pkg)} className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors" title={pkg.is_active ? "Deactivate" : "Activate"}>
                     {pkg.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
+                  
+                  {/* Edit Button */}
                   <button onClick={() => setEditingPkg(pkg)} className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors" title="Edit">
                     <Edit className="w-4 h-4" />
                   </button>
+
+                  {/* NEW: Permanent Secure Delete Button */}
+                  <DeletePackageButton packageId={pkg.id} packageName={pkg.name} />
                 </div>
               </div>
               

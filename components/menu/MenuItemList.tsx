@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, Edit, EyeOff, Eye, Utensils } from 'lucide-react';
 import MenuItemForm from './MenuItemForm';
+import DeleteDishButton from './DeleteDishButton'; // Imported new delete component
 import { updateMenuItem } from '@/lib/menu';
 import { useRouter } from 'next/navigation';
 
@@ -55,13 +56,19 @@ export default function MenuItemList({ businessId, items }: MenuItemListProps) {
                       <p className={`font-semibold text-sm ${item.is_active ? 'text-gray-900' : 'text-gray-500 line-through'}`}>{item.name}</p>
                       {!item.is_active && <p className="text-[10px] font-bold text-red-500 uppercase mt-0.5">Inactive</p>}
                     </div>
-                    <div className="flex gap-1.5">
+                    <div className="flex items-center gap-1">
+                      {/* Status Toggle Eye Button */}
                       <button onClick={() => toggleStatus(item)} className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title={item.is_active ? "Deactivate" : "Activate"}>
                         {item.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
+                      
+                      {/* Edit Button */}
                       <button onClick={() => setEditingItem(item)} className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
+
+                      {/* NEW: Permanent Secure Delete Button */}
+                      <DeleteDishButton dishId={item.id} dishName={item.name} />
                     </div>
                   </div>
                 ))}
