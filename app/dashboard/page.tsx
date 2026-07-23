@@ -4,7 +4,7 @@ import { getDashboardStats, getUpcomingEvents, getMonthlyRevenueLast6Months } fr
 import StatCard from '@/components/dashboard/StatCard';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import RevenueChart from '@/components/dashboard/RevenueChart';
-import { CalendarCheck, CalendarDays, Wallet, AlertCircle } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Wallet, AlertCircle, Tag } from 'lucide-react';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -40,13 +40,20 @@ export default async function DashboardHomePage() {
     <div className="space-y-6">
       
       {/* Top Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard 
           title="Revenue This Month" 
           value={stats.revenueThisMonth} 
           isCurrency={true}
           icon={<Wallet className="w-6 h-6" />} 
           subtitle="Total payments collected"
+        />
+        <StatCard 
+          title="Discount This Month" 
+          value={stats.discountThisMonth || 0} 
+          isCurrency={true}
+          icon={<Tag className="w-6 h-6" />} 
+          subtitle="Concessions offered"
         />
         <StatCard 
           title="Total Outstanding" 

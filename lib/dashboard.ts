@@ -28,28 +28,34 @@ export async function getDashboardStats(businessId: string) {
     .gte('event_date', firstDayNextMonth)
     .lte('event_date', lastDayNextMonth);
 
-  // 3. Revenue This Month (Mathematically Exact)
+  // 3. Revenue & Discounts This Month (Mathematically Exact)
   const { data: thisMonthPayments } = await supabase
     .from('payments')
-    .select('amount, payment_type')
+    .select('amount, discount_amount, payment_type')
     .eq('business_id', businessId)
     .gte('payment_date', firstDayThisMonth)
     .lte('payment_date', lastDayThisMonth);
 
   let revenueThisMonth = 0;
+  let discountThisMonth = 0;
+
   thisMonthPayments?.forEach(p => {
     const amt = Number(p.amount) || 0;
+    const disc = Number(p.discount_amount) || 0;
+
     if (p.payment_type?.toLowerCase() === 'refund') {
       revenueThisMonth -= amt;
     } else {
       revenueThisMonth += amt;
     }
+
+    discountThisMonth += disc;
   });
 
-  // 4. Total Outstanding Balance (All Active Contracts)
+  // 4. Total Outstanding Balance (All Active Contracts, factoring in discounts)
   const { data: contracts } = await supabase
     .from('contracts')
-    .select('total_amount, payments(amount, payment_type)')
+    .select('total_amount, payments(amount, discount_amount, payment_type)')
     .eq('business_id', businessId)
     .eq('status', 'Active');
 
@@ -58,18 +64,23 @@ export async function getDashboardStats(businessId: string) {
     const totalAmount = Number(contract.total_amount) || 0;
     let paid = 0;
     let refunded = 0;
+    let totalDiscount = 0;
     
     contract.payments?.forEach((p: any) => {
       const amt = Number(p.amount) || 0;
+      const disc = Number(p.discount_amount) || 0;
+
       if (p.payment_type?.toLowerCase() === 'refund') {
         refunded += amt;
       } else {
         paid += amt;
       }
+
+      totalDiscount += disc;
     });
     
     const effectivePaid = paid - refunded;
-    const balance = totalAmount - effectivePaid;
+    const balance = totalAmount - effectivePaid - totalDiscount;
     if (balance > 0) {
       totalOutstanding += balance;
     }
@@ -79,6 +90,7 @@ export async function getDashboardStats(businessId: string) {
     confirmedBookingsThisMonth: thisMonthCount || 0,
     confirmedBookingsNextMonth: nextMonthCount || 0,
     revenueThisMonth,
+    discountThisMonth,
     totalOutstanding
   };
 }

@@ -17,6 +17,7 @@ interface RecordPaymentModalProps {
 export default function RecordPaymentModal({ isOpen, onClose, contractId, businessId, currentBalance }: RecordPaymentModalProps) {
   const router = useRouter();
   const [amount, setAmount] = useState<string>('');
+  const [discountAmount, setDiscountAmount] = useState<string>('0');
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [method, setMethod] = useState('Cash');
   const [type, setType] = useState('Advance');
@@ -27,19 +28,32 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
   if (!isOpen) return null;
 
   const paymentAmount = Number(amount) || 0;
+  const discount = Number(discountAmount) || 0;
   const isRefund = type === 'Refund';
   
-  // Real-time math preview
+  // Real-time math preview accounting for payment and discount
+  const totalDeduction = paymentAmount + discount;
   const previewBalance = isRefund 
     ? currentBalance + paymentAmount 
-    : currentBalance - paymentAmount;
+    : currentBalance - totalDeduction;
 
-  const isOverpaying = !isRefund && paymentAmount > currentBalance;
+  const isOverpaying = !isRefund && totalDeduction > currentBalance;
+  const isNegativeDiscount = discount < 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (paymentAmount <= 0) return alert("Amount must be greater than zero.");
+    if (paymentAmount <= 0 && discount <= 0) {
+      return alert("Please enter a valid payment or discount amount.");
+    }
+
+    if (isNegativeDiscount) {
+      return alert("Discount cannot be negative.");
+    }
+
+    if (!isRefund && totalDeduction > currentBalance) {
+      return alert("Payment plus discount cannot exceed the remaining balance.");
+    }
 
     setIsSubmitting(true);
     try {
@@ -47,6 +61,7 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
         business_id: businessId,
         contract_id: contractId,
         amount: paymentAmount,
+        discount_amount: discount,
         payment_date: new Date(paymentDate).toISOString(),
         payment_method: method,
         payment_type: type,
@@ -58,6 +73,7 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
       onClose();
       // Reset form on success
       setAmount('');
+      setDiscountAmount('0');
       setNotes('');
     } catch (error) {
       console.error(error);
@@ -90,7 +106,7 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase">This Transaction</p>
                 <p className={`font-bold mt-1 ${isRefund ? 'text-red-500' : 'text-green-500'}`}>
-                  {isRefund ? '+' : '-'} PKR {paymentAmount.toLocaleString()}
+                  {isRefund ? '+' : '-'} PKR {totalDeduction.toLocaleString()}
                 </p>
               </div>
               <div>
@@ -104,14 +120,19 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
             {isOverpaying && (
               <div className="p-3 bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold rounded-xl flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                Warning: The payment amount exceeds the remaining balance due.
+                Warning: The total transaction (payment + discount) exceeds the remaining balance due.
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Amount (PKR) *</label>
-                <input type="number" required value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#B8860B]/20 focus:border-[#B8860B]" />
+                <input type="number" min="0" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#B8860B]/20 focus:border-[#B8860B]" placeholder="0" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Discount (PKR)</label>
+                <input type="number" min="0" value={discountAmount} onChange={e => setDiscountAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-lg font-bold focus:ring-2 focus:ring-[#B8860B]/20 focus:border-[#B8860B]" placeholder="0" />
               </div>
               
               <div>
@@ -146,7 +167,7 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
 
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Notes (Optional)</label>
-                <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#B8860B]/20 resize-none" placeholder="Cheque number, bank details, or reason for refund..." />
+                <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#B8860B]/20 resize-none" placeholder="Cheque number, bank details, or reason for discount/refund..." />
               </div>
             </div>
           </form>
@@ -154,7 +175,7 @@ export default function RecordPaymentModal({ isOpen, onClose, contractId, busine
 
         <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
           <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-          <button type="submit" form="payment-form" disabled={isSubmitting} className="px-8 py-2.5 bg-[#B8860B] hover:bg-[#986f08] text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-2">
+          <button type="submit" form="payment-form" disabled={isSubmitting || isNegativeDiscount} className="px-8 py-2.5 bg-[#B8860B] hover:bg-[#986f08] text-white text-sm font-bold rounded-xl shadow-md disabled:opacity-50 flex items-center gap-2">
             {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : 'Save Transaction'}
           </button>
         </div>
