@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Loader2, Lock } from 'lucide-react';
@@ -12,25 +12,28 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Fallback strings prevent the 500 Server Error crash if variables are missing
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder_key';
+  // Safely retrieve keys
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  const supabase = createBrowserClient(supabaseUrl, supabaseKey);
+  // Memoize client creation so it doesn't re-instantiate on every keystroke
+  const supabase = useMemo(() => {
+    if (!supabaseUrl || !supabaseKey) return null;
+    return createBrowserClient(supabaseUrl, supabaseKey);
+  }, [supabaseUrl, supabaseKey]);
 
   useEffect(() => {
-    // If the fallbacks are being used, display a clean warning on the UI
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
-      setError('System Error: Database connection keys are missing from the Vercel environment.');
+    if (!supabaseUrl || !supabaseKey) {
+      setError('System Error: Database connection keys are missing from environment variables.');
     }
-  }, [supabaseUrl]);
+  }, [supabaseUrl, supabaseKey]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    if (supabaseUrl === 'https://placeholder.supabase.co') {
+    if (!supabase) {
       setError('Cannot log in: Database connection is not configured.');
       setIsLoading(false);
       return;
@@ -103,7 +106,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#B8860B] hover:bg-[#986f08] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex justify-center items-center gap-2 mt-2"
+              className="w-full bg-[#B8860B] hover:bg-[#986f08] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex justify-center items-center gap-2 mt-2 disabled:opacity-50"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Secure Sign In'}
             </button>
@@ -114,4 +117,4 @@ export default function LoginPage() {
     </div>
   );
 }
-// Version 1.0.1 - Live Production Deployment
+// Version 1.0.2 - Fixed Client Auth Initialization

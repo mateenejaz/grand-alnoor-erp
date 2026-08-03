@@ -149,7 +149,7 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
                   <td className="p-4 text-sm text-gray-500 hidden sm:table-cell flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 inline text-gray-400 mr-1" /> {lastDate}
                   </td>
-                  <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-3">
                       <button
                         type="button"
@@ -159,7 +159,17 @@ export default function CustomerList({ initialCustomers, businessId }: CustomerL
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#1F3864] transition-colors" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/dashboard/customers/${c.id}`);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                        title="View Client Details"
+                      >
+                        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-[#1F3864] transition-colors" />
+                      </button>
                     </div>
                   </td>
                 </tr>

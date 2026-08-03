@@ -38,7 +38,10 @@ export default async function QuotationDetailPage({ params }: Props) {
 
   const packages = await getPackages(businessId);
   
-  const isEditable = quotation.status === 'Draft' || quotation.status === 'Sent';
+  const isEditable =
+    quotation.status === 'Draft' ||
+    quotation.status === 'Sent' ||
+    quotation.status === 'Accepted';
   const canConvert = quotation.status === 'Sent';
 
   return (
@@ -53,25 +56,24 @@ export default async function QuotationDetailPage({ params }: Props) {
             <h2 className="text-xl font-bold text-gray-900 font-serif">Quotation #{quotation.id.split('-')[0].toUpperCase()}</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               Current Status: <strong className={quotation.status === 'Sent' ? 'text-blue-600' : quotation.status === 'Accepted' ? 'text-green-600' : 'text-gray-700'}>{quotation.status}</strong>
+              {isEditable && (
+                <span className="text-gray-400"> · Edit packages, dishes, and prices in the builder below</span>
+              )}
             </p>
           </div>
         </div>
         
-        {/* Action Button Row */}
         <div className="flex items-center gap-3">
-          {/* NEW: Permanent secure deletion component toggle button */}
           <DeleteQuotationButton quotationId={quotation.id} />
-
-          {/* Convert to Contract Action Button */}
           {canConvert && <ConvertContractButton quotationId={quotation.id} />}
         </div>
       </div>
 
       {isEditable && (
-        <QuotationBuilder 
-          businessId={businessId} 
-          booking={quotation.bookings} 
-          packages={packages} 
+        <QuotationBuilder
+          businessId={businessId}
+          booking={quotation.bookings}
+          packages={packages}
           existingQuotation={quotation}
         />
       )}

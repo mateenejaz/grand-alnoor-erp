@@ -68,7 +68,7 @@ export default function PackageList({ businessId, packages, allItems }: PackageL
               <p className="text-sm text-gray-600 mb-4 line-clamp-2">{pkg.description || 'No description provided.'}</p>
               
               <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                <span>Includes {pkg.package_items?.length || 0} Items</span>
+                <span>Includes {pkg.menu_package_items?.length || 0} Items</span>
                 {!pkg.is_active && <span className="text-red-500">Inactive</span>}
               </div>
             </div>

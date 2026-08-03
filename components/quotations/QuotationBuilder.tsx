@@ -23,6 +23,7 @@ export default function QuotationBuilder({ businessId, booking, packages, existi
   const [isCustomMenuOpen, setIsCustomMenuOpen] = useState(false);
 
   const guestCount = booking?.guest_count_estimate || 0;
+  const isAcceptedEdit = existingQuotation?.status === 'Accepted';
 
   // Real-time Total Math
   const grandTotal = lineItems.reduce((sum, item) => sum + (Number(item.line_total) || 0), 0);
@@ -137,8 +138,16 @@ export default function QuotationBuilder({ businessId, booking, packages, existi
       const { error: itemsErr } = await supabase.from('quotation_line_items').insert(itemsToInsert);
       if (itemsErr) throw itemsErr;
 
+      // Keep linked contract total in sync when editing an accepted quote
+      if (status === 'Accepted' && quotationId) {
+        await supabase
+          .from('contracts')
+          .update({ total_amount: grandTotal })
+          .eq('quotation_id', quotationId);
+      }
+
       router.refresh();
-      router.push('/dashboard/quotations');
+      router.push(`/dashboard/quotations/${quotationId}`);
     } catch (error) {
       console.error(error);
       alert('Failed to save quotation.');
@@ -150,7 +159,20 @@ export default function QuotationBuilder({ businessId, booking, packages, existi
   return (
     <>
       <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm space-y-8">
-        
+        {existingQuotation && (
+          <div>
+            <h3 className="text-lg font-bold text-[#1F3864] font-serif">Edit Quotation</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Update packages, custom menu dishes, quantities, and prices for this quote.
+              {isAcceptedEdit && (
+                <span className="block text-amber-700 mt-1">
+                  This quote is Accepted — saving updates the quotation and the linked contract total.
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Valid Until Date Picker */}
         <div className="max-w-xs">
           <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Valid Until</label>
@@ -250,20 +272,32 @@ export default function QuotationBuilder({ businessId, booking, packages, existi
 
         {/* Final Actions */}
         <div className="flex justify-end gap-3 pt-6">
-          <button 
-            onClick={() => handleSubmit('Draft')} 
-            disabled={isSubmitting}
-            className="px-6 py-2.5 border border-gray-300 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" /> Save as Draft
-          </button>
-          <button 
-            onClick={() => handleSubmit('Sent')} 
-            disabled={isSubmitting}
-            className="px-8 py-2.5 bg-[#1F3864] hover:bg-[#152644] text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" /> Mark as Sent
-          </button>
+          {isAcceptedEdit ? (
+            <button
+              onClick={() => handleSubmit('Accepted')}
+              disabled={isSubmitting}
+              className="px-8 py-2.5 bg-[#1F3864] hover:bg-[#152644] text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" /> Save Changes
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => handleSubmit('Draft')}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 border border-gray-300 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" /> Save as Draft
+              </button>
+              <button
+                onClick={() => handleSubmit('Sent')}
+                disabled={isSubmitting}
+                className="px-8 py-2.5 bg-[#1F3864] hover:bg-[#152644] text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" /> Mark as Sent
+              </button>
+            </>
+          )}
         </div>
       </div>
 

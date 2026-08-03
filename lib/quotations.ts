@@ -5,17 +5,19 @@ export function calculateTotal(lineItems: any[]): number {
   return lineItems.reduce((sum, item) => {
     const qty = Number(item.quantity) || 0;
     const price = Number(item.unit_price) || 0;
-    return sum + (qty * price);
+    return sum + qty * price;
   }, 0);
 }
 
 export async function getQuotations(businessId: string) {
   const { data, error } = await supabase
     .from('quotations')
-    .select('*, customers(full_name), bookings(event_date, venues(name))')
+    .select(
+      '*, customers(full_name, phone), businesses(name, address, phone), bookings(event_date, venues(name), customers(full_name, phone))'
+    )
     .eq('business_id', businessId)
     .order('created_at', { ascending: false });
-    
+
   if (error) throw error;
   return data || [];
 }
@@ -23,12 +25,32 @@ export async function getQuotations(businessId: string) {
 export async function getQuotationById(id: string) {
   const { data, error } = await supabase
     .from('quotations')
-    .select('*, customers(*), bookings(*, venues(*)), quotation_line_items(*)')
+    .select(
+      '*, customers(*), businesses(*), bookings(*, venues(*), customers(*)), quotation_line_items(*)'
+    )
     .eq('id', id)
     .single();
-    
-  if (error) throw error;
-  return data;
+
+  if (error || !data) throw error;
+
+  // Fallback customer resolution logic if direct joins are unpopulated
+  let customerData = data.customers || data.bookings?.customers;
+  if (!customerData) {
+    const targetCustId = data.customer_id || data.bookings?.customer_id;
+    if (targetCustId) {
+      const { data: cust } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', targetCustId)
+        .single();
+      if (cust) customerData = cust;
+    }
+  }
+
+  return {
+    ...data,
+    resolvedCustomer: customerData || null,
+  };
 }
 
 export async function createQuotation(quotationData: any, lineItems: any[]) {
@@ -38,27 +60,33 @@ export async function createQuotation(quotationData: any, lineItems: any[]) {
     .insert([quotationData])
     .select()
     .single();
-    
+
   if (quoteError) throw quoteError;
 
   // 2. Insert Line Items tied to the new quotation ID
   if (lineItems.length > 0) {
-    const itemsToInsert = lineItems.map(item => ({
+    const itemsToInsert = lineItems.map((item) => ({
       quotation_id: quote.id,
       description: item.description,
       quantity: Number(item.quantity),
       unit_price: Number(item.unit_price),
-      line_total: Number(item.quantity) * Number(item.unit_price)
+      line_total: Number(item.quantity) * Number(item.unit_price),
     }));
-    
-    const { error: lineError } = await supabase.from('quotation_line_items').insert(itemsToInsert);
+
+    const { error: lineError } = await supabase
+      .from('quotation_line_items')
+      .insert(itemsToInsert);
     if (lineError) throw lineError;
   }
 
   return quote;
 }
 
-export async function updateQuotation(id: string, quotationData: any, lineItems: any[]) {
+export async function updateQuotation(
+  id: string,
+  quotationData: any,
+  lineItems: any[]
+) {
   // 1. Update Main Quotation
   const { data: quote, error: quoteError } = await supabase
     .from('quotations')
@@ -66,22 +94,24 @@ export async function updateQuotation(id: string, quotationData: any, lineItems:
     .eq('id', id)
     .select()
     .single();
-    
+
   if (quoteError) throw quoteError;
 
   // 2. Destructive Update for Line Items (Delete all, re-insert to guarantee strict sync)
   await supabase.from('quotation_line_items').delete().eq('quotation_id', id);
 
   if (lineItems.length > 0) {
-    const itemsToInsert = lineItems.map(item => ({
+    const itemsToInsert = lineItems.map((item) => ({
       quotation_id: id,
       description: item.description,
       quantity: Number(item.quantity),
       unit_price: Number(item.unit_price),
-      line_total: Number(item.quantity) * Number(item.unit_price)
+      line_total: Number(item.quantity) * Number(item.unit_price),
     }));
-    
-    const { error: lineError } = await supabase.from('quotation_line_items').insert(itemsToInsert);
+
+    const { error: lineError } = await supabase
+      .from('quotation_line_items')
+      .insert(itemsToInsert);
     if (lineError) throw lineError;
   }
 
@@ -89,6 +119,9 @@ export async function updateQuotation(id: string, quotationData: any, lineItems:
 }
 
 export async function updateQuotationStatus(id: string, status: string) {
-  const { error } = await supabase.from('quotations').update({ status }).eq('id', id);
+  const { error } = await supabase
+    .from('quotations')
+    .update({ status })
+    .eq('id', id);
   if (error) throw error;
 }

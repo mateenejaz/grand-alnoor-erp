@@ -69,6 +69,14 @@ CREATE POLICY "Users can access their own business menu package links" ON menu_p
         EXISTS (
             SELECT 1 FROM menu_packages 
             WHERE menu_packages.id = menu_package_items.package_id
+              AND menu_packages.business_id = (SELECT business_id FROM users WHERE auth_id = auth.uid())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM menu_packages 
+            WHERE menu_packages.id = menu_package_items.package_id
+              AND menu_packages.business_id = (SELECT business_id FROM users WHERE auth_id = auth.uid())
         )
     );
 
@@ -87,6 +95,14 @@ CREATE POLICY "Users can access their own business quotation line items" ON quot
         EXISTS (
             SELECT 1 FROM quotations 
             WHERE quotations.id = quotation_line_items.quotation_id
+              AND quotations.business_id = (SELECT business_id FROM users WHERE auth_id = auth.uid())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM quotations 
+            WHERE quotations.id = quotation_line_items.quotation_id
+              AND quotations.business_id = (SELECT business_id FROM users WHERE auth_id = auth.uid())
         )
     );
 

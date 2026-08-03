@@ -11,17 +11,52 @@ interface QuotationPrintViewProps {
 export default function QuotationPrintView({ quotation }: QuotationPrintViewProps) {
   const lineItems = quotation.quotation_line_items || [];
   const grandTotal = calculateTotal(lineItems);
-  
-  // Safe date formatting in case the database relation is missing
-  const eventDate = quotation.bookings?.event_date ? format(new Date(quotation.bookings.event_date), 'MMMM do, yyyy') : 'TBD';
-  const validUntil = quotation.valid_until ? format(new Date(quotation.valid_until), 'MMMM do, yyyy') : 'TBD';
+
+  // 1. Dynamic Client Resolution (Fallbacks to ensure client data is never missing)
+  const customer =
+    quotation.resolvedCustomer ||
+    quotation.customers ||
+    quotation.bookings?.customers ||
+    quotation.bookings?.customer;
+
+  const clientName =
+    customer?.full_name ||
+    customer?.name ||
+    customer?.client_name ||
+    quotation.customer_name ||
+    quotation.client_name ||
+    quotation.bookings?.client_name ||
+    'Guest Client';
+
+  const clientPhone =
+    customer?.phone ||
+    customer?.mobile ||
+    quotation.customer_phone ||
+    quotation.bookings?.phone ||
+    '';
+
+  // 2. Dynamic Venue / Business Info Resolution
+  const venue = quotation.bookings?.venues || quotation.venues;
+  const business = quotation.businesses;
+
+  const venueName = venue?.name || business?.name || 'Grand Alnoor Marquee & Banquet';
+  const venueAddress = venue?.address || business?.address || 'Sahiwal, Punjab, Pakistan';
+  const venuePhone = venue?.phone || business?.phone || '+92 300 0000000';
+
+  // Safe date formatting
+  const eventDate = quotation.bookings?.event_date
+    ? format(new Date(quotation.bookings.event_date), 'MMMM do, yyyy')
+    : 'TBD';
+  const validUntil = quotation.valid_until
+    ? format(new Date(quotation.valid_until), 'MMMM do, yyyy')
+    : 'TBD';
 
   return (
     <div className="mt-8">
       {/* Floating Action Bar - Hidden during actual printing */}
-      <div className="flex justify-end mb-4 print:hidden">
-        <button 
-          onClick={() => window.print()} 
+      <div className="flex justify-end items-center gap-3 mb-4 print:hidden">
+        <button
+          onClick={() => window.print()}
           className="px-6 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center gap-2"
         >
           <Printer className="w-4 h-4" /> Print Quotation
@@ -30,24 +65,33 @@ export default function QuotationPrintView({ quotation }: QuotationPrintViewProp
 
       {/* The Printable Document */}
       <div className="bg-white p-10 md:p-16 rounded-2xl shadow-sm border border-gray-200 mx-auto max-w-4xl print:shadow-none print:border-none print:p-0 print:m-0">
-        
         {/* Document Header */}
         <div className="flex justify-between items-start border-b-2 border-[#1F3864] pb-8 mb-8">
           <div>
-            <h1 className="text-4xl font-black text-[#1F3864] font-serif uppercase tracking-tight">Grand Alnoor</h1>
-            <p className="text-[#B8860B] font-bold tracking-widest text-sm mt-1 uppercase">Marquee & Banquet Hall</p>
+            <h1 className="text-4xl font-black text-[#1F3864] font-serif uppercase tracking-tight">
+              Grand Alnoor
+            </h1>
+            <p className="text-[#B8860B] font-bold tracking-widest text-sm mt-1 uppercase">
+              {venueName}
+            </p>
             <div className="text-gray-500 text-sm mt-4 space-y-1">
-              <p>123 Main Commercial Boulevard</p>
-              <p>Sahiwal, Punjab, Pakistan</p>
-              <p>Phone: +92 300 1234567</p>
+              <p>{venueAddress}</p>
+              <p>Phone: {venuePhone}</p>
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-3xl font-bold text-gray-200 uppercase tracking-wider">Quotation</h2>
+            <h2 className="text-3xl font-bold text-gray-200 uppercase tracking-wider">
+              Quotation
+            </h2>
             <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600 text-left">
-              <span className="font-bold">Quote Ref:</span> <span>{quotation.id?.split('-')[0].toUpperCase()}</span>
-              <span className="font-bold">Date Issued:</span> <span>{quotation.created_at ? format(new Date(quotation.created_at), 'MMM d, yyyy') : ''}</span>
-              <span className="font-bold text-[#1F3864]">Valid Until:</span> <span className="text-[#1F3864] font-bold">{validUntil}</span>
+              <span className="font-bold">Quote Ref:</span>{' '}
+              <span>{quotation.id?.split('-')[0].toUpperCase()}</span>
+              <span className="font-bold">Date Issued:</span>{' '}
+              <span>
+                {quotation.created_at ? format(new Date(quotation.created_at), 'MMM d, yyyy') : ''}
+              </span>
+              <span className="font-bold text-[#1F3864]">Valid Until:</span>{' '}
+              <span className="text-[#1F3864] font-bold">{validUntil}</span>
             </div>
           </div>
         </div>
@@ -55,17 +99,31 @@ export default function QuotationPrintView({ quotation }: QuotationPrintViewProp
         {/* Client & Event Details */}
         <div className="grid grid-cols-2 gap-12 mb-10">
           <div>
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-100 pb-1">Prepared For</h3>
-            <p className="font-bold text-lg text-gray-900">{quotation.customers?.full_name || 'Client Details Missing'}</p>
-            <p className="text-sm text-gray-600">{quotation.customers?.phone || ''}</p>
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-100 pb-1">
+              Prepared For
+            </h3>
+            <p className="font-bold text-lg text-gray-900">{clientName}</p>
+            {clientPhone && <p className="text-sm text-gray-600">{clientPhone}</p>}
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-100 pb-1">Event Details</h3>
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 border-b border-gray-100 pb-1">
+              Event Details
+            </h3>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <span className="text-gray-500">Date:</span> <span className="font-bold text-gray-900">{eventDate}</span>
-              <span className="text-gray-500">Venue:</span> <span className="font-bold text-gray-900">{quotation.bookings?.venues?.name || 'TBD'}</span>
-              <span className="text-gray-500">Timing:</span> <span className="font-bold text-gray-900">{quotation.bookings?.time_slot || 'TBD'}</span>
-              <span className="text-gray-500">Guests:</span> <span className="font-bold text-gray-900">{quotation.bookings?.guest_count_estimate || 0}</span>
+              <span className="text-gray-500">Date:</span>{' '}
+              <span className="font-bold text-gray-900">{eventDate}</span>
+              <span className="text-gray-500">Venue:</span>{' '}
+              <span className="font-bold text-gray-900">
+                {quotation.bookings?.venues?.name || venueName || 'TBD'}
+              </span>
+              <span className="text-gray-500">Timing:</span>{' '}
+              <span className="font-bold text-gray-900">
+                {quotation.bookings?.time_slot || 'TBD'}
+              </span>
+              <span className="text-gray-500">Guests:</span>{' '}
+              <span className="font-bold text-gray-900">
+                {quotation.bookings?.guest_count_estimate || 0}
+              </span>
             </div>
           </div>
         </div>
@@ -83,10 +141,14 @@ export default function QuotationPrintView({ quotation }: QuotationPrintViewProp
           <tbody className="divide-y divide-gray-100">
             {lineItems.map((item: any, idx: number) => (
               <tr key={idx} className="text-sm">
-                <td className="py-4 text-gray-900">{item.description}</td>
+                <td className="py-4 text-gray-900">{item.description || item.item_name}</td>
                 <td className="py-4 text-center text-gray-600">{item.quantity}</td>
-                <td className="py-4 text-right text-gray-600">PKR {Number(item.unit_price).toLocaleString()}</td>
-                <td className="py-4 text-right font-bold text-gray-900">PKR {Number(item.line_total).toLocaleString()}</td>
+                <td className="py-4 text-right text-gray-600">
+                  PKR {Number(item.unit_price).toLocaleString()}
+                </td>
+                <td className="py-4 text-right font-bold text-gray-900">
+                  PKR {Number(item.line_total || item.quantity * item.unit_price).toLocaleString()}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -100,17 +162,27 @@ export default function QuotationPrintView({ quotation }: QuotationPrintViewProp
               <span className="text-sm font-bold">PKR {grandTotal.toLocaleString()}</span>
             </div>
             <div className="border-t-2 border-[#1F3864] mt-3 pt-3 flex justify-between items-center">
-              <span className="text-base text-[#1F3864] font-black uppercase tracking-wider">Total</span>
-              <span className="text-xl text-[#1F3864] font-black">PKR {grandTotal.toLocaleString()}</span>
+              <span className="text-base text-[#1F3864] font-black uppercase tracking-wider">
+                Total
+              </span>
+              <span className="text-xl text-[#1F3864] font-black">
+                PKR {grandTotal.toLocaleString()}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Terms */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Terms & Conditions</h3>
-          <p className="text-xs text-gray-500 whitespace-pre-wrap leading-relaxed max-w-2xl">{quotation.notes}</p>
-        </div>
+        {quotation.notes && (
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+              Terms & Conditions
+            </h3>
+            <p className="text-xs text-gray-500 whitespace-pre-wrap leading-relaxed max-w-2xl">
+              {quotation.notes}
+            </p>
+          </div>
+        )}
 
         {/* Signature Area */}
         <div className="mt-16 grid grid-cols-2 gap-24 pt-10">

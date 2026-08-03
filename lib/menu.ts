@@ -4,7 +4,7 @@ import { supabaseBrowser as supabase } from './supabase-client';
 export async function getPackages(businessId: string) {
   const { data, error } = await supabase
     .from('menu_packages')
-    .select('*, package_items(item_id)')
+    .select('*, menu_package_items(item_id)')
     .eq('business_id', businessId)
     .order('created_at', { ascending: false });
     
@@ -74,7 +74,7 @@ export async function updateMenuItem(id: string, itemData: any) {
 // --- PACKAGE ITEMS LINKING ---
 export async function getPackageItems(packageId: string) {
   const { data, error } = await supabase
-    .from('package_items')
+    .from('menu_package_items')
     .select('item_id')
     .eq('package_id', packageId);
     
@@ -84,7 +84,7 @@ export async function getPackageItems(packageId: string) {
 
 export async function addItemToPackage(packageId: string, itemId: string) {
   const { error } = await supabase
-    .from('package_items')
+    .from('menu_package_items')
     .insert([{ package_id: packageId, item_id: itemId }]);
     
   if (error) throw error;
@@ -92,7 +92,7 @@ export async function addItemToPackage(packageId: string, itemId: string) {
 
 export async function removeItemFromPackage(packageId: string, itemId: string) {
   const { error } = await supabase
-    .from('package_items')
+    .from('menu_package_items')
     .delete()
     .eq('package_id', packageId)
     .eq('item_id', itemId);
@@ -102,11 +102,11 @@ export async function removeItemFromPackage(packageId: string, itemId: string) {
 
 // Helper to wipe and rewrite checklist items instantly
 export async function syncPackageItems(packageId: string, itemIds: string[]) {
-  await supabase.from('package_items').delete().eq('package_id', packageId);
+  await supabase.from('menu_package_items').delete().eq('package_id', packageId);
   
   if (itemIds.length > 0) {
     const inserts = itemIds.map(id => ({ package_id: packageId, item_id: id }));
-    const { error } = await supabase.from('package_items').insert(inserts);
+    const { error } = await supabase.from('menu_package_items').insert(inserts);
     if (error) throw error;
   }
 }

@@ -5,6 +5,7 @@ export interface VenueInput {
   name: string;
   type: string;
   capacity: number;
+  base_price: number;
   description?: string;
   is_active: boolean;
 }

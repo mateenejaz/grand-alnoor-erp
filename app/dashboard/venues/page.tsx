@@ -39,6 +39,7 @@ export default function VenuesPage() {
             name: 'RSM Hall',
             type: 'Marquee',
             capacity: 450,
+            base_price: 0,
             description: 'Premium operational independent hall space with custom lighting matrix grids.',
             is_active: true,
           };
@@ -48,6 +49,7 @@ export default function VenuesPage() {
             name: 'JTS Hall',
             type: 'Marquee',
             capacity: 350,
+            base_price: 0,
             description: 'Independent banquet hall layout equipped with automated cooling plants.',
             is_active: true,
           };

@@ -2,76 +2,91 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  CalendarDays, 
-  Users, 
-  FileText, 
-  FileCheck, 
-  CreditCard, 
-  Utensils, 
-  MapPin, 
-  Settings as SettingsIcon 
+import {
+  LayoutDashboard,
+  CalendarDays,
+  FileText,
+  FileCheck,
+  Users,
+  UtensilsCrossed,
+  Package,
+  Receipt,
+  DollarSign,
+  Building2,
+  Settings,
+  LogOut,
 } from 'lucide-react';
-
-const menuItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarDays },
-  { name: 'Customers', href: '/dashboard/customers', icon: Users },
-  { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
-  { name: 'Contracts', href: '/dashboard/contracts', icon: FileCheck },
-  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Menu & Catering', href: '/dashboard/menu', icon: Utensils },
-  { name: 'Venues', href: '/dashboard/venues', icon: MapPin },
-  { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
-];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Bookings & Calendar', href: '/dashboard/bookings', icon: CalendarDays },
+    { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
+    { name: 'Contracts', href: '/dashboard/contracts', icon: FileCheck },
+    { name: 'Customers', href: '/dashboard/customers', icon: Users },
+    { name: 'Menu & Catering', href: '/dashboard/menu', icon: UtensilsCrossed },
+    { name: 'Inventory', href: '/dashboard/inventory', icon: Package },
+    { name: 'Payments & Ledger', href: '/dashboard/payments', icon: Receipt },
+    { name: 'Expenses', href: '/dashboard/expenses', icon: DollarSign },
+    { name: 'Venues', href: '/dashboard/venues', icon: Building2 },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  ];
+
   return (
-    <aside className="w-64 bg-[#1F3864] text-white flex flex-col min-h-screen shadow-xl border-r border-[#B8860B]/20">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-white/10 text-center">
-        <p className="text-xs font-semibold tracking-widest text-[#B8860B] uppercase">
-          Marquee System
-        </p>
-        <h2 className="text-xl font-bold tracking-tight text-white mt-1 font-serif">
-          Grand Alnoor
-        </h2>
+    <div className="w-64 bg-[#1F3864] text-white min-h-screen flex flex-col justify-between p-4 shrink-0 shadow-lg print:hidden">
+      <div className="space-y-6">
+        {/* Brand Logo Header */}
+        <div className="px-3 py-2 border-b border-white/10 pb-4">
+          <h1 className="text-2xl font-black font-serif uppercase tracking-tight text-white">
+            Grand Alnoor
+          </h1>
+          <p className="text-[10px] text-[#B8860B] font-bold tracking-widest uppercase mt-0.5">
+            ERP Management System
+          </p>
+        </div>
+
+        {/* Navigation Menu */}
+        <nav className="space-y-1">
+          {navigation.map((item) => {
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-[#B8860B] text-white shadow-md'
+                    : 'text-blue-100 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
-                isActive
-                  ? 'bg-white/10 text-[#B8860B] border-l-4 border-[#B8860B] pl-3'
-                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <Icon 
-                className={`w-5 h-5 transition-transform duration-200 group-hover:scale-105 ${
-                  isActive ? 'text-[#B8860B]' : 'text-gray-400 group-hover:text-white'
-                }`} 
-              />
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer Info */}
-      <div className="p-4 border-t border-white/10 text-center text-xs text-gray-400">
-        Grand Alnoor ERP v1.0
+      {/* Bottom Footer Actions */}
+      <div className="pt-4 border-t border-white/10 space-y-2">
+        <div className="px-3 py-2 text-[10px] text-blue-200 font-semibold">
+          RSM Hall & JTS Hall
+        </div>
+        <Link
+          href="/login"
+          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-300 hover:bg-red-500/20 transition-all w-full"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          <span>Sign Out</span>
+        </Link>
       </div>
-    </aside>
+    </div>
   );
 }

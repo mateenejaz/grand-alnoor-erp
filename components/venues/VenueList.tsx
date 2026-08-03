@@ -46,6 +46,7 @@ export default function VenueList({ venues, onAddClick, onEditClick, onToggleAct
                   <th className="px-6 py-4">Venue Details</th>
                   <th className="px-6 py-4">Classification</th>
                   <th className="px-6 py-4">Maximum Capacity</th>
+                  <th className="px-6 py-4">Base Price</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Operations Actions</th>
                 </tr>
@@ -66,6 +67,9 @@ export default function VenueList({ venues, onAddClick, onEditClick, onToggleAct
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-800">
                       {venue.capacity} guests
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      PKR {Number(venue.base_price || 0).toLocaleString()}
                     </td>
                     <td className="px-6 py-4">
                       <span

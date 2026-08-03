@@ -26,7 +26,7 @@ export default function PackageForm({ businessId, allItems, initialData, onClose
   });
 
   // Extract initial item IDs if editing
-  const existingItemIds = initialData?.package_items?.map((pi: any) => pi.item_id) || [];
+  const existingItemIds = initialData?.menu_package_items?.map((pi: any) => pi.item_id) || [];
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(existingItemIds);
 
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -13,6 +13,7 @@ export default function VenueForm({ venue, onClose, onSave }: VenueFormProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState('Marquee');
   const [capacity, setCapacity] = useState(350);
+  const [basePrice, setBasePrice] = useState(0);
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,7 @@ export default function VenueForm({ venue, onClose, onSave }: VenueFormProps) {
       setName(venue.name || '');
       setType(venue.type || 'Marquee');
       setCapacity(venue.capacity || 350);
+      setBasePrice(Number(venue.base_price) || 0);
       setDescription(venue.description || '');
       setIsActive(venue.is_active !== undefined ? venue.is_active : true);
     }
@@ -46,6 +48,7 @@ export default function VenueForm({ venue, onClose, onSave }: VenueFormProps) {
         name: name.trim(),
         type,
         capacity: Number(capacity),
+        base_price: Number(basePrice),
         description: description.trim(),
         is_active: isActive,
       });
@@ -116,6 +119,19 @@ export default function VenueForm({ venue, onClose, onSave }: VenueFormProps) {
               type="number"
               value={capacity}
               onChange={(e) => setCapacity(Number(e.target.value))}
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F3864] focus:border-transparent transition-all text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+              Base Rental Price (PKR)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={basePrice}
+              onChange={(e) => setBasePrice(Number(e.target.value))}
               className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F3864] focus:border-transparent transition-all text-sm"
             />
           </div>
