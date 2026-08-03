@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Calendar, Filter, Receipt } from 'lucide-react';
 import { Expense, ExpenseInput, deleteExpense, createExpense, updateExpense } from '@/lib/expenses';
 import ExpenseForm, { EXPENSE_CATEGORIES } from './ExpenseForm';
@@ -25,7 +25,7 @@ export default function ExpenseList({
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useMemo(() => {
+  useEffect(() => {
     setExpenses(initialExpenses);
   }, [initialExpenses]);
 
@@ -208,15 +208,17 @@ export default function ExpenseList({
                       {expense.description}
                     </td>
                     <td className="py-3.5 px-4">
-                      {expense.contracts ? (
-                        <span className="text-amber-800 font-medium">
-                          {expense.contracts.customer_name || 'Event'} (
-                          {expense.contracts.event_date || 'No Date'})
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 font-light">—</span>
-                      )}
-                    </td>
+  {expense.contracts ? (
+    <span className="text-amber-800 font-medium">
+      {expense.contracts.contract_number
+        ? `Contract #${expense.contracts.contract_number}`
+        : 'Event'}{' '}
+      ({expense.contracts.event_date || 'No Date'})
+    </span>
+  ) : (
+    <span className="text-gray-400 font-light">—</span>
+  )}
+</td>
                     <td className="py-3.5 px-4 text-right font-bold text-gray-900 whitespace-nowrap">
                       Rs. {Number(expense.amount).toLocaleString('en-PK')}
                     </td>

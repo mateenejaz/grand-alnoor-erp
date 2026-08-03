@@ -38,13 +38,20 @@ export default function ExpenseForm({
   const [expenseDate, setExpenseDate] = useState<string>(today);
   const [description, setDescription] = useState<string>('');
   const [contractId, setContractId] = useState<string>('');
-  const [contracts, setContracts] = useState<Array<{ id: string; customer_name?: string; event_date?: string }>>([]);
+  const [contracts, setContracts] = useState<
+    Array<{
+      id: string;
+      event_date?: string;
+      contract_number?: string;
+      customers?: { name?: string } | null;
+    }>
+  >([]);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && businessId) {
-      getActiveContractsForExpenses(businessId).then((res) => setContracts(res));
+      getActiveContractsForExpenses(businessId).then((res) => setContracts(res as any));
     }
   }, [isOpen, businessId]);
 
@@ -195,11 +202,16 @@ export default function ExpenseForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
             >
               <option value="">General Overhead (No Contract)</option>
-              {contracts.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.customer_name ? `${c.customer_name} ` : ''}({c.event_date || 'No Date'})
-                </option>
-              ))}
+              {contracts.map((c) => {
+                const labelName =
+                  c.customers?.name ||
+                  (c.contract_number ? `Contract #${c.contract_number}` : 'Event');
+                return (
+                  <option key={c.id} value={c.id}>
+                    {labelName} ({c.event_date || 'No Date'})
+                  </option>
+                );
+              })}
             </select>
           </div>
 

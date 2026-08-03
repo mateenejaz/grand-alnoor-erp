@@ -11,8 +11,8 @@ export interface Expense {
   created_at?: string;
   contracts?: {
     id: string;
-    customer_name?: string;
     event_date?: string;
+    contract_number?: string;
   } | null;
 }
 
@@ -31,9 +31,10 @@ export async function getExpenses(
   toDate?: string,
   category?: string
 ) {
+  // First try joining contracts directly with simple attributes
   let query = supabase
     .from('expenses')
-    .select('*, contracts(id, customer_name, event_date)')
+    .select('*, contracts(id, event_date, contract_number)')
     .eq('business_id', businessId)
     .order('expense_date', { ascending: false });
 
@@ -48,10 +49,24 @@ export async function getExpenses(
   }
 
   const { data, error } = await query;
+
   if (error) {
-    console.error('Error fetching expenses:', error);
-    throw error;
+    // Graceful fallback to plain expenses query if relationship error occurs
+    let plainQuery = supabase
+      .from('expenses')
+      .select('*')
+      .eq('business_id', businessId)
+      .order('expense_date', { ascending: false });
+
+    if (fromDate) plainQuery = plainQuery.gte('expense_date', fromDate);
+    if (toDate) plainQuery = plainQuery.lte('expense_date', toDate);
+    if (category && category !== 'ALL') plainQuery = plainQuery.eq('category', category);
+
+    const { data: plainData, error: plainError } = await plainQuery;
+    if (plainError) throw plainError;
+    return plainData as Expense[];
   }
+
   return data as Expense[];
 }
 
@@ -114,13 +129,18 @@ export async function deleteExpense(id: string) {
 export async function getActiveContractsForExpenses(businessId: string) {
   const { data, error } = await supabase
     .from('contracts')
-    .select('id, customer_name, event_date')
+    .select('id, event_date, contract_number')
     .eq('business_id', businessId)
     .order('event_date', { ascending: false });
 
   if (error) {
-    console.error('Error fetching contracts for expenses dropdown:', error);
-    return [];
+    // Fallback if contract_number column isn't present
+    const { data: fallbackData } = await supabase
+      .from('contracts')
+      .select('id, event_date')
+      .eq('business_id', businessId);
+
+    return fallbackData || [];
   }
   return data || [];
 }
