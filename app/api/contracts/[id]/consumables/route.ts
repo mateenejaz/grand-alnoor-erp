@@ -5,12 +5,17 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: Props
 ) {
   try {
-    const contractId = params.id;
+    const resolvedParams = await params;
+    const contractId = resolvedParams.id;
 
     const { data, error } = await supabase
       .from('contract_consumables')
@@ -28,10 +33,11 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: Props
 ) {
   try {
-    const contractId = params.id;
+    const resolvedParams = await params;
+    const contractId = resolvedParams.id;
     const { item_id, quantity_consumed, unit_price_pkr } = await request.json();
 
     const { data, error } = await supabase
