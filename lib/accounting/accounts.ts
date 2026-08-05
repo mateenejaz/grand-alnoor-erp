@@ -56,7 +56,7 @@ export function formatPKR(amount: number): string {
   const isNegative = amount < 0;
   const absVal = Math.abs(amount);
 
-  const formattedNum = absVal.toLocaleString('en-US', {
+  const formattedNum = absVal.toLocaleString('en-PK', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -134,6 +134,7 @@ export async function updateAccount(id: string, data: UpdateAccountInput): Promi
   }
   return updated;
 }
+
 /**
  * Calculates the current balance of an account.
  * Includes the deduplication fix for Cash (1000) vs Bank (1001) operational payments.
